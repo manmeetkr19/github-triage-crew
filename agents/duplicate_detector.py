@@ -10,19 +10,16 @@ the LLM for a duplicate verdict. Returns the verdict as an A2A data artifact.
 import os
 import sys
 
-import uvicorn
 from dotenv import load_dotenv
-from fastapi import FastAPI
 
-from a2a.helpers import get_data_parts, new_data_part, new_task_from_user_message
+from a2a.helpers import get_data_parts, new_data_part
 from a2a.server.agent_execution import AgentExecutor, RequestContext
 from a2a.server.events.event_queue import EventQueue
-from a2a.server.request_handlers import DefaultRequestHandler
-from a2a.server.routes import add_a2a_routes_to_fastapi, create_agent_card_routes, create_jsonrpc_routes
-from a2a.server.tasks import InMemoryTaskStore, TaskUpdater
+from a2a.server.tasks import TaskUpdater
 from a2a.types import AgentCapabilities, AgentCard, AgentInterface, AgentSkill
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from agents._server import ensure_task, run  # noqa: E402
 from clients.github_mcp_client import GitHubMCPClient  # noqa: E402
 from clients.llm_client import LLMClient  # noqa: E402
 
@@ -52,11 +49,7 @@ SYSTEM_PROMPT = (
 
 class DuplicateDetectorExecutor(AgentExecutor):
     async def execute(self, context: RequestContext, event_queue: EventQueue) -> None:
-        task = context.current_task
-        if task is None:
-            task = new_task_from_user_message(context.message)
-            await event_queue.enqueue_event(task)
-
+        task = await ensure_task(context, event_queue)
         updater = TaskUpdater(event_queue, task.id, task.context_id)
         await updater.start_work()
 
@@ -107,21 +100,5 @@ def build_agent_card() -> AgentCard:
     )
 
 
-def build_app() -> FastAPI:
-    agent_card = build_agent_card()
-    handler = DefaultRequestHandler(
-        agent_executor=DuplicateDetectorExecutor(),
-        task_store=InMemoryTaskStore(),
-        agent_card=agent_card,
-    )
-    app = FastAPI()
-    add_a2a_routes_to_fastapi(
-        app,
-        agent_card_routes=create_agent_card_routes(agent_card),
-        jsonrpc_routes=create_jsonrpc_routes(handler, rpc_url="/a2a"),
-    )
-    return app
-
-
 if __name__ == "__main__":
-    uvicorn.run(build_app(), host="0.0.0.0", port=PORT)
+    run(build_agent_card(), DuplicateDetectorExecutor(), PORT)
