@@ -1,0 +1,62 @@
+[
+  {
+    "issue_number": 1,
+    "expected_type": "bug",
+    "expected_priority": "priority:p1",
+    "expected_duplicate_of": null
+  },
+  {
+    "issue_number": 2,
+    "expected_type": "bug",
+    "expected_priority": "priority:p1",
+    "expected_duplicate_of": 1
+  },
+  {
+    "issue_number": 3,
+    "expected_type": "feature",
+    "expected_priority": "priority:p3",
+    "expected_duplicate_of": null
+  },
+  {
+    "issue_number": 4,
+    "expected_type": "bug",
+    "expected_priority": "priority:p1",
+    "expected_duplicate_of": null
+  },
+  {
+    "issue_number": 5,
+    "expected_type": "bug",
+    "expected_priority": "priority:p0",
+    "expected_duplicate_of": null
+  },
+  {
+    "issue_number": 6,
+    "expected_type": "bug",
+    "expected_priority": "priority:p0",
+    "expected_duplicate_of": 5
+  },
+  {
+    "issue_number": 7,
+    "expected_type": "bug",
+    "expected_priority": "priority:p2",
+    "expected_duplicate_of": null
+  },
+  {
+    "issue_number": 8,
+    "expected_type": "bug",
+    "expected_priority": "priority:p2",
+    "expected_duplicate_of": 7
+  },
+  {
+    "issue_number": 9,
+    "expected_type": "question",
+    "expected_priority": "priority:p3",
+    "expected_duplicate_of": null
+  },
+  {
+    "issue_number": 10,
+    "expected_type": "feature",
+    "expected_priority": "priority:p2",
+    "expected_duplicate_of": null
+  }
+]

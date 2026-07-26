@@ -5,3 +5,4 @@ __pycache__/
 debug_*.txt
 debug_*.json
 audit_log.db
+eval/dry_run_report.json
