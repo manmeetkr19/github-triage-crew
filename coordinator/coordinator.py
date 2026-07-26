@@ -20,6 +20,7 @@ from a2a.helpers import get_data_parts, new_data_message
 from a2a.types import Role, SendMessageRequest, TaskState
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from clients.audit_mcp_client import AuditMCPClient  # noqa: E402
 from clients.github_mcp_client import GitHubMCPClient  # noqa: E402
 from coordinator.reconcile import reconcile  # noqa: E402
 
@@ -75,13 +76,13 @@ async def triage_issue(owner: str, repo: str, issue_number: int) -> dict:
             await gh.update_issue(owner, repo, issue_number, labels=result.labels)
         await gh.add_comment(owner, repo, issue_number, result.comment_body)
 
+    raw_verdicts = {"duplicate": duplicate_verdict, "label": label_verdict, "priority": priority_verdict}
+    async with AuditMCPClient() as audit:
+        await audit.record_decision(f"{owner}/{repo}", issue_number, result.labels, result.notes, raw_verdicts)
+
     return {
         "issue_number": issue_number,
         "labels": result.labels,
         "notes": result.notes,
-        "raw_verdicts": {
-            "duplicate": duplicate_verdict,
-            "label": label_verdict,
-            "priority": priority_verdict,
-        },
+        "raw_verdicts": raw_verdicts,
     }

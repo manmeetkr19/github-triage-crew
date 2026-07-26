@@ -4,3 +4,4 @@ __pycache__/
 .env
 debug_*.txt
 debug_*.json
+audit_log.db
