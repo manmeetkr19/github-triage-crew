@@ -1,0 +1,56 @@
+name: Issue Triage
+
+# NOTE: this file's *active* copy must live in the target repo being
+# triaged (github-triage-crew-sandbox), not here - GitHub only fires
+# `issues: opened` for workflows defined in the repo the event happens in.
+# This copy exists for version control / documentation of what's deployed.
+
+on:
+  issues:
+    types: [opened]
+
+jobs:
+  triage:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout triage crew source
+        uses: actions/checkout@v4
+        with:
+          repository: manmeetkr19/github-triage-crew
+          path: crew
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        working-directory: crew
+        run: pip install -r requirements.txt
+
+      - name: Start specialist and audit-log servers
+        working-directory: crew
+        env:
+          GITHUB_TOKEN: ${{ secrets.CREW_GITHUB_TOKEN }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          OPENROUTER_MODEL: ${{ secrets.OPENROUTER_MODEL }}
+        run: |
+          python agents/duplicate_detector.py &
+          python agents/labeler.py &
+          python agents/priority_scorer.py &
+          python mcp_servers/audit_log_server.py &
+          sleep 5
+
+      - name: Triage the new issue
+        working-directory: crew
+        env:
+          GITHUB_TOKEN: ${{ secrets.CREW_GITHUB_TOKEN }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          OPENROUTER_MODEL: ${{ secrets.OPENROUTER_MODEL }}
+        run: |
+          python -c "
+          import asyncio, sys
+          sys.path.insert(0, '.')
+          from coordinator.coordinator import triage_issue
+          asyncio.run(triage_issue('${{ github.repository_owner }}', '${{ github.event.repository.name }}', ${{ github.event.issue.number }}))
+          "
