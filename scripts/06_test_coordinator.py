@@ -13,7 +13,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from coordinator.coordinator import triage_issue  # noqa: E402
 
 if __name__ == "__main__":
-    result = asyncio.run(triage_issue("manmeetkr19", "github-triage-crew-sandbox", 3))
+    result = asyncio.run(triage_issue("manmeetkr19", "github-triage-crew-sandbox", 4))
     with open("debug_response.txt", "w", encoding="utf-8") as f:
         json.dump(result, f, indent=2)
     print("done, see debug_response.txt")
