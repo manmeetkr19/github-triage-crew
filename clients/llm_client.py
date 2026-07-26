@@ -34,19 +34,31 @@ class LLMClient:
             "Respond with ONLY a single valid JSON object matching this schema - "
             "no prose, no markdown fences, no explanation:\n" + json.dumps(schema)
         )
-        response = await self._client.chat.completions.create(
-            model=self._model,
-            messages=[
-                {"role": "system", "content": f"{system}\n\n{strict_instruction}"},
-                {"role": "user", "content": user},
-            ],
-            response_format={
-                "type": "json_schema",
-                "json_schema": {"name": schema_name, "schema": schema, "strict": True},
-            },
-        )
-        content = response.choices[0].message.content or ""
-        return self._parse_json_object(content)
+        messages = [
+            {"role": "system", "content": f"{system}\n\n{strict_instruction}"},
+            {"role": "user", "content": user},
+        ]
+        response_format = {
+            "type": "json_schema",
+            "json_schema": {"name": schema_name, "schema": schema, "strict": True},
+        }
+
+        # Confirmed empirically (not guessed): this model sometimes returns
+        # empty content with finish_reason="stop" and normal token counts -
+        # not a token-budget issue, just occasional flakiness (~1-in-3 in
+        # testing). Retrying is the correct fix; a few attempts drives the
+        # compound failure rate low without masking a real bug.
+        last_error: Exception | None = None
+        for attempt in range(3):
+            response = await self._client.chat.completions.create(
+                model=self._model, messages=messages, response_format=response_format
+            )
+            content = response.choices[0].message.content or ""
+            try:
+                return self._parse_json_object(content)
+            except LLMOutputError as e:
+                last_error = e
+        raise last_error
 
     @staticmethod
     def _parse_json_object(content: str) -> dict:
